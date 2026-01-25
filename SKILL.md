@@ -12,11 +12,11 @@ Read Reddit using your session cookies. No API key needed.
 ## Quick start
 
 ```bash
-reddit-cli posts SideProject 10       # Get 10 hot posts
-reddit-cli posts entrepreneur 5 top   # Get top 5 posts
-reddit-cli search "passive income"    # Search all Reddit
-reddit-cli search "AI" --sub SideProject  # Search in subreddit
-reddit-cli info programming           # Subreddit info
+reddit-cli posts programming 10       # Get 10 hot posts
+reddit-cli posts gaming 5 top         # Get top 5 posts
+reddit-cli search "python tutorial"   # Search all Reddit
+reddit-cli search "help" --sub linux  # Search in subreddit
+reddit-cli info AskReddit             # Subreddit info
 reddit-cli check                      # Test connection
 ```
 
