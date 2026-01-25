@@ -135,9 +135,9 @@ Environment:
   TOKEN_V2          token_v2 cookie value (optional)
 
 Examples:
-  reddit-cli posts SideProject 10 hot
-  reddit-cli search "passive income" --sub entrepreneur
-  reddit-cli info programming
+  reddit-cli posts programming 10 hot
+  reddit-cli search "python tutorial" --sub learnpython
+  reddit-cli info AskReddit
 `);
     return;
   }
