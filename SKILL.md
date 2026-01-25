@@ -1,6 +1,6 @@
 ---
 name: reddit-cli
-version: 1.0.0
+version: 1.0.2
 description: Reddit CLI using cookies for authentication. Read posts, search, and get subreddit info.
 author: kelsia14
 ---
