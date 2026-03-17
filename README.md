@@ -2,7 +2,7 @@
 
 A simple Reddit CLI that uses your browser cookies for authentication. No API key needed.
 
-Built for [Clawdbot](https://github.com/clawdbot/clawdbot) but works standalone too.
+Built for [OpenClaw](https://github.com/openclaw/openclaw) but works standalone too.
 
 ## Installation
 
@@ -36,6 +36,10 @@ node reddit-cli.js posts programming 10       # 10 hot posts
 node reddit-cli.js posts gaming 5 top         # top 5 posts
 node reddit-cli.js posts news 20 new          # 20 newest posts
 
+# Get full post content
+node reddit-cli.js post 1rvaymh               # by post ID
+node reddit-cli.js post https://reddit.com/r/openclaw/comments/1rvaymh/...  # by URL
+
 # Search Reddit
 node reddit-cli.js search "python tutorial"           # search all
 node reddit-cli.js search "help" --sub linux 10       # search in subreddit
@@ -52,19 +56,20 @@ node reddit-cli.js check
 | Command | Description |
 |---------|-------------|
 | `posts <subreddit> [limit] [sort]` | Get posts (sort: hot, new, top, rising) |
+| `post <url-or-id>` | Get full post content by URL or post ID |
 | `search <query> [--sub <subreddit>] [limit]` | Search Reddit |
 | `info <subreddit>` | Get subreddit info |
 | `check` | Verify cookie authentication |
 
-## For Clawdbot Users
+## For OpenClaw Users
 
 Install as a skill:
 ```bash
 # Copy to your skills folder
-cp -r reddit-cli /path/to/clawd/skills/
+cp -r reddit-cli /path/to/openclaw/skills/
 ```
 
-The skill will be available once Clawdbot restarts.
+The skill will be available once OpenClaw restarts.
 
 ## Notes
 
