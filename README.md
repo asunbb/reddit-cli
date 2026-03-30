@@ -1,3 +1,8 @@
+
+本地适应性修改。
+
+---
+
 # reddit-cli 📮
 
 A simple Reddit CLI that uses your browser cookies for authentication. No API key needed.
