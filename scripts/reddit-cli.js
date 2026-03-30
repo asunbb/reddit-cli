@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const https = require('https');
+const http = require('http');
 
 // Read cookies from env
 const REDDIT_SESSION = process.env.REDDIT_SESSION || '';
@@ -13,7 +14,111 @@ const COOKIES = [
 
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
+// Proxy configuration
+const HTTPS_PROXY = process.env.HTTPS_PROXY || process.env.https_proxy || '';
+const HTTP_PROXY = process.env.HTTP_PROXY || process.env.http_proxy || '';
+const NO_PROXY = process.env.NO_PROXY || process.env.no_proxy || '';
+
+function getProxyUrl(targetUrl) {
+  const urlObj = new URL(targetUrl);
+
+  // Check NO_PROXY
+  if (NO_PROXY) {
+    const noProxyList = NO_PROXY.split(',').map(s => s.trim());
+    const hostname = urlObj.hostname;
+
+    for (const pattern of noProxyList) {
+      if (pattern === '*' || hostname === pattern || hostname.endsWith('.' + pattern)) {
+        return null;
+      }
+    }
+  }
+
+  // Return appropriate proxy
+  if (urlObj.protocol === 'https:') {
+    return HTTPS_PROXY || HTTP_PROXY;
+  }
+  return HTTP_PROXY;
+}
+
+function requestViaProxy(targetUrl, proxyUrl) {
+  return new Promise((resolve, reject) => {
+    const targetObj = new URL(targetUrl);
+    const proxyObj = new URL(proxyUrl);
+
+    const proxyAuth = proxyObj.username ? `Basic ${Buffer.from(`${proxyObj.username}:${proxyObj.password}`).toString('base64')}` : null;
+
+    // Create CONNECT request for HTTPS tunnel
+    const options = {
+      hostname: proxyObj.hostname,
+      port: parseInt(proxyObj.port) || 8080,
+      method: 'CONNECT',
+      path: `${targetObj.hostname}:${targetObj.port || 443}`,
+      headers: {
+        'Host': `${targetObj.hostname}:${targetObj.port || 443}`,
+        'User-Agent': USER_AGENT,
+      }
+    };
+
+    if (proxyAuth) {
+      options.headers['Proxy-Authorization'] = proxyAuth;
+    }
+
+    const req = http.request(options);
+
+    req.on('connect', (res, socket, head) => {
+      if (res.statusCode !== 200) {
+        socket.destroy();
+        reject(new Error(`Proxy CONNECT failed: ${res.statusCode}`));
+        return;
+      }
+
+      // Create HTTPS request through the tunnel
+      const tlsOptions = {
+        socket: socket,
+        servername: targetObj.hostname,
+        path: targetObj.pathname + targetObj.search,
+        method: 'GET',
+        headers: {
+          'Host': targetObj.hostname,
+          'User-Agent': USER_AGENT,
+          'Cookie': COOKIES,
+          'Accept': 'application/json',
+        },
+        rejectUnauthorized: false,
+      };
+
+      const tlsReq = https.request(tlsOptions, (tlsRes) => {
+        let data = '';
+        tlsRes.on('data', chunk => data += chunk);
+        tlsRes.on('end', () => {
+          try {
+            resolve(JSON.parse(data));
+          } catch (e) {
+            reject(new Error(`Failed to parse JSON: ${data.substring(0, 200)}`));
+          }
+        });
+      });
+      tlsReq.on('error', (err) => {
+        socket.destroy();
+        reject(err);
+      });
+      tlsReq.end();
+    });
+
+    req.on('error', reject);
+    req.end();
+  });
+}
+
 function request(url) {
+  const proxyUrl = getProxyUrl(url);
+  if (proxyUrl) {
+    console.error(`[Proxy] Using proxy: ${proxyUrl}`);
+    return requestViaProxy(url, proxyUrl);
+  }
+
+  // Direct request without proxy
   return new Promise((resolve, reject) => {
     const urlObj = new URL(url);
     const options = {
@@ -187,6 +292,9 @@ Usage:
 Environment:
   REDDIT_SESSION    reddit_session cookie value
   TOKEN_V2          token_v2 cookie value (optional)
+  HTTP_PROXY        HTTP proxy URL (e.g., http://127.0.0.1:10813)
+  HTTPS_PROXY       HTTPS proxy URL (defaults to HTTP_PROXY if not set)
+  NO_PROXY          Comma-separated list of hosts to bypass proxy
 
 Examples:
   reddit-cli posts programming 10 hot
@@ -203,7 +311,7 @@ Examples:
       console.log('Checking cookies...');
       console.log(`REDDIT_SESSION: ${REDDIT_SESSION ? '✓ set' : '✗ not set'}`);
       console.log(`TOKEN_V2: ${TOKEN_V2 ? '✓ set' : '✗ not set'}`);
-      
+
       // Try a simple request
       const info = await getSubredditInfo('reddit');
       console.log(`\n✓ Connection works! r/reddit has ${info.subscribers.toLocaleString()} subscribers`);
